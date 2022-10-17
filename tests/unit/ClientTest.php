@@ -8,6 +8,7 @@ use alexeevdv\SumSub\Exception\TransportException;
 use alexeevdv\SumSub\Request\AccessTokenRequest;
 use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
+use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
 use alexeevdv\SumSub\Request\RequestSignerInterface;
 use alexeevdv\SumSub\Request\ResetApplicantRequest;
@@ -275,6 +276,59 @@ final class ClientTest extends Unit
         $this->expectException(BadResponseException::class);
         $client->getApplicantStatus(new ApplicantStatusRequest('123456'));
     }
+
+
+    public function testGetApplicantStatusSdk(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/123456/status', $request->getUri()->getPath());
+                self::assertSame('', $request->getUri()->getQuery());
+
+                return new Response(200, [], json_encode(['a' => 'b']));
+            }),
+        ]);
+
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+
+        $applicantStatusResponse = $client->getApplicantStatusSdk(new ApplicantStatusSdkRequest('123456'));
+        self::assertSame(['a' => 'b'], $applicantStatusResponse->asArray());
+    }
+
+    public function testGetApplicantStatusSdkWhenResponseCodeIsNot200(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/123456/status', $request->getUri()->getPath());
+                self::assertSame('', $request->getUri()->getQuery());
+
+                return new Response(500, [], 'Something went wrong');
+            }),
+        ]);
+
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+
+        $this->expectException(BadResponseException::class);
+        $client->getApplicantStatusSdk(new ApplicantStatusSdkRequest('123456'));
+    }
+
+    public function testGetApplicantStatusSdkWhenCanNotDecodeResponse(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                return new Response(200, [], 'Not a JSON string');
+            }),
+        ]);
+
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+
+        $this->expectException(BadResponseException::class);
+        $client->getApplicantStatusSdk(new ApplicantStatusSdkRequest('123456'));
+    }
+
 
     public function testGetDocumentImages(): void
     {

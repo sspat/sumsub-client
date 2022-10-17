@@ -7,6 +7,7 @@ use alexeevdv\SumSub\Exception\TransportException;
 use alexeevdv\SumSub\Request\AccessTokenRequest;
 use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
+use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
 use alexeevdv\SumSub\Request\InspectionChecksRequest;
 use alexeevdv\SumSub\Request\RequestSignerInterface;
@@ -14,6 +15,7 @@ use alexeevdv\SumSub\Request\ResetApplicantRequest;
 use alexeevdv\SumSub\Response\AccessTokenResponse;
 use alexeevdv\SumSub\Response\ApplicantDataResponse;
 use alexeevdv\SumSub\Response\ApplicantStatusResponse;
+use alexeevdv\SumSub\Response\ApplicantStatusSdkResponse;
 use alexeevdv\SumSub\Response\DocumentImagesResponse;
 use alexeevdv\SumSub\Response\InspectionChecksResponse;
 use alexeevdv\SumSub\Response\ResetApplicantResponse;
@@ -156,6 +158,29 @@ final class Client implements ClientInterface
         }
 
         return new ApplicantStatusResponse($this->decodeResponse($httpResponse));
+    }
+
+    /**
+     * @throws BadResponseException
+     * @throws TransportException
+     */
+    public function getApplicantStatusSdk(ApplicantStatusSdkRequest $request): ApplicantStatusSdkResponse
+    {
+        $url = sprintf(
+            '%s/resources/applicants/%s/status',
+            $this->baseUrl,
+            $request->getApplicantId()
+        );
+
+        $httpRequest = $this->createApiRequest('GET', $url);
+
+        $httpResponse = $this->sendApiRequest($httpRequest);
+
+        if ($httpResponse->getStatusCode() !== 200) {
+            throw new BadResponseException($httpResponse);
+        }
+
+        return new ApplicantStatusSdkResponse($this->decodeResponse($httpResponse));
     }
 
     /**
