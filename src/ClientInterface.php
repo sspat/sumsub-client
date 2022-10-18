@@ -6,10 +6,12 @@ use alexeevdv\SumSub\Exception\Exception;
 use alexeevdv\SumSub\Request\AccessTokenRequest;
 use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
+use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
 use alexeevdv\SumSub\Request\InspectionChecksRequest;
 use alexeevdv\SumSub\Request\ResetApplicantRequest;
 use alexeevdv\SumSub\Response\AccessTokenResponse;
+use alexeevdv\SumSub\Response\ApplicantStatusSdkResponse;
 use alexeevdv\SumSub\Response\ApplicantDataResponse;
 use alexeevdv\SumSub\Response\ApplicantStatusResponse;
 use alexeevdv\SumSub\Response\DocumentImagesResponse;
@@ -48,6 +50,14 @@ interface ClientInterface
      * @throws Exception
      */
     public function getApplicantStatus(ApplicantStatusRequest $request): ApplicantStatusResponse;
+
+    /**
+     * Get applicant status SDK
+     *
+     * @see    https://developers.sumsub.com/api-reference/#getting-applicant-status-sdk
+     * @throws Exception
+     */
+    public function getApplicantStatusSdk(ApplicantStatusSdkRequest $request): ApplicantStatusSdkResponse;
 
     /**
      * Get document images
