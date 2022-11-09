@@ -10,8 +10,10 @@ use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
+use alexeevdv\SumSub\Request\ImportApplicantRequest;
 use alexeevdv\SumSub\Request\RequestSignerInterface;
 use alexeevdv\SumSub\Request\ResetApplicantRequest;
+use alexeevdv\SumSub\Request\ShareTokenRequest;
 use Codeception\Stub\Expected;
 use Codeception\Test\Unit;
 use GuzzleHttp\Psr7\Request;
@@ -327,6 +329,132 @@ final class ClientTest extends Unit
 
         $this->expectException(BadResponseException::class);
         $client->getApplicantStatusSdk(new ApplicantStatusSdkRequest('123456'));
+    }
+
+    public function testGetShareToken(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/accessTokens/-/shareToken', $request->getUri()->getPath());
+                self::assertSame('applicantId=123456&forClientId=abc123&ttlInSecs=1000', $request->getUri()->getQuery());
+
+                return new Response(200, [], json_encode([
+                    'token' => '555666',
+                    'forClientId' => 'abc123',
+                ]));
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $applicantTokenResponse = $client->getShareToken(
+            new ShareTokenRequest('123456', 'abc123', 1000)
+        );
+        self::assertSame('555666', $applicantTokenResponse->getToken());
+        self::assertSame('abc123', $applicantTokenResponse->getClientId());
+    }
+
+    public function testGetShareTokenWhenResponseCodeIsNot200(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/accessTokens/-/shareToken', $request->getUri()->getPath());
+                self::assertSame('applicantId=123456&forClientId=abc123&ttlInSecs=1000', $request->getUri()->getQuery());
+
+                return new Response(500, [], json_encode([
+                    'token' => '555666',
+                    'forClientId' => 'abc123',
+                ]));
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $this->expectException(BadResponseException::class);
+        $client->getShareToken(new ShareTokenRequest('123456', 'abc123', 1000));
+    }
+
+    public function testGetShareTokenWhenCanNotDecodeResponse(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/accessTokens/-/shareToken', $request->getUri()->getPath());
+                self::assertSame('applicantId=123456&forClientId=abc123&ttlInSecs=1000', $request->getUri()->getQuery());
+
+                return new Response(500, [], 'Not a JSON string');
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $this->expectException(BadResponseException::class);
+        $client->getShareToken(new ShareTokenRequest('123456', 'abc123', 1000));
+    }
+
+    public function testImportApplicant(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/-/import', $request->getUri()->getPath());
+                self::assertSame(
+                    'shareToken=123456&resetIdDocSetTypes=SELFIE%2CIDENTITY&trustReview=true&userId=321&levelName=kyclvl', 
+                    $request->getUri()->getQuery()
+                );
+
+                return new Response(200, [], json_encode(['id' => '555']));
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $applicantDataResponse = $client->importApplicant(
+            new ImportApplicantRequest('123456', ['SELFIE','IDENTITY'], true, '321', 'kyclvl')
+        );
+        self::assertSame(['id' => '555'], $applicantDataResponse->asArray());
+    }
+
+    public function testImportApplicantRequired(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/-/import', $request->getUri()->getPath());
+                self::assertSame('shareToken=123456', $request->getUri()->getQuery());
+
+                return new Response(200, [], json_encode(['id' => '555']));
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $applicantDataResponse = $client->importApplicant(new ImportApplicantRequest('123456'));
+        self::assertSame(['id' => '555'], $applicantDataResponse->asArray());
+    }
+
+    public function testImportApplicantWhenResponseCodeIsNot200(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/-/import', $request->getUri()->getPath());
+                self::assertSame('shareToken=123456', $request->getUri()->getQuery());
+
+                return new Response(500, [], json_encode(['id' => '555']));
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $this->expectException(BadResponseException::class);
+        $client->importApplicant(new ImportApplicantRequest('123456'));
+    }
+
+    public function testImportApplicantWhenCanNotDecodeResponse(): void
+    {
+        /** @var ClientInterface $httpClient */
+        $httpClient = $this->makeEmpty(ClientInterface::class, [
+            'sendRequest' => Expected::once(static function (RequestInterface $request): ResponseInterface {
+                self::assertSame('/resources/applicants/-/import', $request->getUri()->getPath());
+                self::assertSame('shareToken=123456', $request->getUri()->getQuery());
+
+                return new Response(200, [], 'Not a JSON string');
+            }),
+        ]);
+        $client = new Client($httpClient, $this->getRequestFactory(), $this->getRequestSigner());
+        $this->expectException(BadResponseException::class);
+        $client->importApplicant(new ImportApplicantRequest('123456'));
     }
 
 

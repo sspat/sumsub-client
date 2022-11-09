@@ -9,9 +9,11 @@ use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
+use alexeevdv\SumSub\Request\ImportApplicantRequest;
 use alexeevdv\SumSub\Request\InspectionChecksRequest;
 use alexeevdv\SumSub\Request\RequestSignerInterface;
 use alexeevdv\SumSub\Request\ResetApplicantRequest;
+use alexeevdv\SumSub\Request\ShareTokenRequest;
 use alexeevdv\SumSub\Response\AccessTokenResponse;
 use alexeevdv\SumSub\Response\ApplicantDataResponse;
 use alexeevdv\SumSub\Response\ApplicantStatusResponse;
@@ -19,6 +21,7 @@ use alexeevdv\SumSub\Response\ApplicantStatusSdkResponse;
 use alexeevdv\SumSub\Response\DocumentImagesResponse;
 use alexeevdv\SumSub\Response\InspectionChecksResponse;
 use alexeevdv\SumSub\Response\ResetApplicantResponse;
+use alexeevdv\SumSub\Response\ShareTokenResponse;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -181,6 +184,74 @@ final class Client implements ClientInterface
         }
 
         return new ApplicantStatusSdkResponse($this->decodeResponse($httpResponse));
+    }
+
+
+    public function getShareToken(ShareTokenRequest $request): ShareTokenResponse
+    {
+        $queryParams = [
+            'applicantId' => $request->getApplicantId(),
+            'forClientId' => $request->getClientId()
+        ];
+
+        if ($request->getTtlInSecs() !== null) {
+            $queryParams['ttlInSecs'] = $request->getTtlInSecs();
+        }
+
+        $url = sprintf(
+            '%s/resources/accessTokens/-/shareToken?%s',
+            $this->baseUrl,
+            http_build_query($queryParams)
+        );
+
+        $httpRequest = $this->createApiRequest('POST', $url);
+        $httpResponse = $this->sendApiRequest($httpRequest);
+
+        if ($httpResponse->getStatusCode() !== 200) {
+            throw new BadResponseException($httpResponse);
+        }
+
+        $decodedResponse = $this->decodeResponse($httpResponse);
+
+        return new ShareTokenResponse($decodedResponse['token'], $decodedResponse['forClientId']);
+    }
+
+    public function importApplicant(ImportApplicantRequest $request): ApplicantDataResponse
+    {
+        $queryParams = [
+            'shareToken' => $request->getShareToken()
+        ];
+
+        if ($request->getResetIdDocSetTypes() !== null) {
+            $queryParams['resetIdDocSetTypes'] = join(',', $request->getResetIdDocSetTypes());
+        }
+
+        if ($request->getTrustReview() !== null) {
+            $queryParams['trustReview'] = (true == $request->getTrustReview()) ? 'true' : 'false';
+        }
+
+        if ($request->getUserId() !== null) {
+            $queryParams['userId'] = $request->getUserId();
+        }
+
+        if ($request->getLevelName() !== null) {
+            $queryParams['levelName'] = $request->getLevelName();
+        }
+
+        $url = sprintf(
+            '%s/resources/applicants/-/import?%s',
+            $this->baseUrl,
+            http_build_query($queryParams)
+        );
+
+        $httpRequest = $this->createApiRequest('POST', $url);
+        $httpResponse = $this->sendApiRequest($httpRequest);
+
+        if ($httpResponse->getStatusCode() !== 200) {
+            throw new BadResponseException($httpResponse);
+        }
+
+        return new ApplicantDataResponse($this->decodeResponse($httpResponse));
     }
 
     /**
