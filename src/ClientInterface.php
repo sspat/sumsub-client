@@ -8,14 +8,17 @@ use alexeevdv\SumSub\Request\ApplicantDataRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusRequest;
 use alexeevdv\SumSub\Request\ApplicantStatusSdkRequest;
 use alexeevdv\SumSub\Request\DocumentImagesRequest;
+use alexeevdv\SumSub\Request\ImportApplicantRequest;
 use alexeevdv\SumSub\Request\InspectionChecksRequest;
 use alexeevdv\SumSub\Request\ResetApplicantRequest;
+use alexeevdv\SumSub\Request\ShareTokenRequest;
 use alexeevdv\SumSub\Response\AccessTokenResponse;
 use alexeevdv\SumSub\Response\ApplicantStatusSdkResponse;
 use alexeevdv\SumSub\Response\ApplicantDataResponse;
 use alexeevdv\SumSub\Response\ApplicantStatusResponse;
 use alexeevdv\SumSub\Response\DocumentImagesResponse;
 use alexeevdv\SumSub\Response\InspectionChecksResponse;
+use alexeevdv\SumSub\Response\ShareTokenResponse;
 
 interface ClientInterface
 {
@@ -73,4 +76,20 @@ interface ClientInterface
      * @throws Exception
      */
     public function getInspectionChecks(InspectionChecksRequest $request): InspectionChecksResponse;
+
+    /**
+     * Generating a share token
+     *
+     * @see    https://developers.sumsub.com/api-reference/#generating-a-share-token
+     * @throws Exception
+     */
+    public function getShareToken(ShareTokenRequest $request): ShareTokenResponse;
+
+    /**
+     * Importing an applicant
+     *
+     * @see    https://developers.sumsub.com/api-reference/#importing-an-applicant
+     * @throws Exception
+     */
+    public function importApplicant(ImportApplicantRequest $request): ApplicantDataResponse;
 }
